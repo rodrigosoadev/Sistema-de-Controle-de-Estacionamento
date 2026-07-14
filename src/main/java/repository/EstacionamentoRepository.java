@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Repositório simples para persistir veículos ativos e histórico financeiro em CSV.
+ * veículos ativos e histórico financeiro em CSV.
  */
 public class EstacionamentoRepository {
     private static final Path VEICULOS_ATIVOS = Paths.get("veiculos_ativos.csv");
