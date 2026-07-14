@@ -12,19 +12,6 @@ classDiagram
     classDef ui fill:#FCE4EC,stroke:#D81B60,color:#880E4F,stroke-width:1.5px;
     classDef exception fill:#FFEBEE,stroke:#E53935,color:#B71C1C,stroke-width:1.5px;
 
-    class Veiculo:::entidade
-    class Carro:::entidade
-    class Moto:::entidade
-    class Caminhao:::entidade
-    class Ticket:::entidade
-    class Descontavel:::interface
-    class EstacionamentoService:::service
-    class EstacionamentoRepository:::repo
-    class ConsoleUI:::ui
-    class Main:::exception
-    class EstacionamentoLotadoException:::exception
-    class VeiculoNaoEncontradoException:::exception
-
     class Veiculo {
         <<abstract>>
         -String placa
@@ -132,4 +119,17 @@ classDiagram
 
     Exception <|-- EstacionamentoLotadoException
     RuntimeException <|-- VeiculoNaoEncontradoException
+
+    class Veiculo:::entidade
+    class Carro:::entidade
+    class Moto:::entidade
+    class Caminhao:::entidade
+    class Ticket:::entidade
+    class Descontavel:::interface
+    class EstacionamentoService:::service
+    class EstacionamentoRepository:::repo
+    class ConsoleUI:::ui
+    class Main:::exception
+    class EstacionamentoLotadoException:::exception
+    class VeiculoNaoEncontradoException:::exception
 ```
