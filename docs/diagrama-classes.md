@@ -12,12 +12,12 @@ classDiagram
     classDef ui fill:#FCE4EC,stroke:#D81B60,color:#880E4F,stroke-width:1.5px;
     classDef exception fill:#FFEBEE,stroke:#E53935,color:#B71C1C,stroke-width:1.5px;
 
-    class Veiculo,Carro,Moto,Caminhao,Ticket entidade;
+    class Veiculo Carro Moto Caminhao Ticket entidade;
     class Descontavel interface;
     class EstacionamentoService service;
     class EstacionamentoRepository repo;
     class ConsoleUI ui;
-    class Main,EstacionamentoLotadoException,VeiculoNaoEncontradoException exception;
+    class Main EstacionamentoLotadoException VeiculoNaoEncontradoException exception;
 
     class Veiculo {
         <<abstract>>
