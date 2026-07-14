@@ -1,8 +1,3 @@
-# Diagrama de Classes - Sistema de Estacionamento
-
-Versão visual, pronta para README ou documentação do projeto.
-
-```mermaid
 %%{init: {'theme': 'base'}}%%
 classDiagram
     classDef entidade fill:#E3F2FD,stroke:#1E88E5,color:#0D47A1,stroke-width:1.5px;
@@ -132,4 +127,3 @@ classDiagram
     class Main:::exception
     class EstacionamentoLotadoException:::exception
     class VeiculoNaoEncontradoException:::exception
-```
