@@ -21,102 +21,162 @@ import java.util.List;
 
 /**
  * Repositório simples para persistir veículos ativos e histórico financeiro em CSV.
- *
- * Arquivos gerados no diretório de trabalho atual:
- * - veiculos_ativos.csv
- * - historico_financeiro.csv
  */
 public class EstacionamentoRepository {
     private static final Path VEICULOS_ATIVOS = Paths.get("veiculos_ativos.csv");
     private static final Path HISTORICO_FINANCEIRO = Paths.get("historico_financeiro.csv");
     private static final String CSV_SEPARATOR = ";";
+    private static final String HEADER_VEICULOS = "tipo;placa;modelo;horaEntrada";
+    private static final String HEADER_HISTORICO = "placa;tipo;horaEntrada;horaSaida;minutos;valorPago";
 
     public List<Veiculo> carregarVeiculosAtivos() throws IOException {
-        List<Veiculo> lista = new ArrayList<>();
-        if (!Files.exists(VEICULOS_ATIVOS)) return lista;
+        List<Veiculo> veiculos = new ArrayList<>();
+        if (!Files.exists(VEICULOS_ATIVOS)) {
+            return veiculos;
+        }
 
-        try (BufferedReader r = Files.newBufferedReader(VEICULOS_ATIVOS, StandardCharsets.UTF_8)) {
-            String line;
-            while ((line = r.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty()) continue;
-                // pular header caso exista
-                if (line.toLowerCase().startsWith("tipo")) continue;
+        try (BufferedReader reader = Files.newBufferedReader(VEICULOS_ATIVOS, StandardCharsets.UTF_8)) {
+            String linha;
+            while ((linha = reader.readLine()) != null) {
+                String linhaLimpa = linha.trim();
+                if (linhaLimpa.isEmpty() || linhaLimpa.toLowerCase().startsWith("tipo")) {
+                    continue;
+                }
 
-                String[] parts = line.split(CSV_SEPARATOR, -1);
-                if (parts.length < 4) continue; // formato inválido
+                String[] partes = linhaLimpa.split(CSV_SEPARATOR, -1);
+                if (partes.length < 4) {
+                    continue;
+                }
 
-                String tipo = parts[0].trim();
-                String placa = parts[1].trim();
-                String modelo = parts[2].trim();
-                String horaEntradaStr = parts[3].trim();
+                String tipo = partes[0].trim();
+                String placa = partes[1].trim();
+                String modelo = partes[2].trim();
+                String horaEntradaStr = partes[3].trim();
 
                 try {
                     LocalDateTime horaEntrada = LocalDateTime.parse(horaEntradaStr);
-                    Veiculo v = switch (tipo.toUpperCase()) {
-                        case "CARRO" -> new Carro(placa, modelo, horaEntrada);
-                        case "MOTO" -> new Moto(placa, modelo, horaEntrada);
-                        case "CAMINHAO", "CAMINHÃO" -> new Caminhao(placa, modelo, horaEntrada);
-                        default -> null;
-                    };
-
-                    if (v != null) lista.add(v);
-                } catch (DateTimeParseException ex) {
-                    // ignorar linha com data inválida
+                    Veiculo veiculo = criarVeiculo(tipo, placa, modelo, horaEntrada);
+                    if (veiculo != null) {
+                        veiculos.add(veiculo);
+                    }
+                } catch (DateTimeParseException ignored) {
+                    // Ignorar linha com data inválida.
                 }
             }
         }
 
-        return lista;
+        return veiculos;
     }
 
     public void salvarVeiculosAtivos(Collection<Veiculo> veiculos) throws IOException {
-        // sobrescreve arquivo com estado atual
-        try (BufferedWriter w = Files.newBufferedWriter(VEICULOS_ATIVOS, StandardCharsets.UTF_8)) {
-            // header
-            w.write("tipo" + CSV_SEPARATOR + "placa" + CSV_SEPARATOR + "modelo" + CSV_SEPARATOR + "horaEntrada");
-            w.newLine();
+        try (BufferedWriter writer = Files.newBufferedWriter(
+                VEICULOS_ATIVOS,
+                StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.WRITE
+        )) {
+            writer.write(HEADER_VEICULOS);
+            writer.newLine();
 
-            for (Veiculo v : veiculos) {
-                String tipo = tipoDeVeiculo(v);
-                String placa = safe(v.getPlaca());
-                String modelo = safe(v.getModelo());
-                String hora = v.getHoraEntrada() != null ? v.getHoraEntrada().toString() : "";
-                w.write(String.join(CSV_SEPARATOR, tipo, placa, modelo, hora));
-                w.newLine();
+            for (Veiculo veiculo : veiculos) {
+                writer.write(String.join(
+                        CSV_SEPARATOR,
+                        tipoDeVeiculo(veiculo),
+                        safe(veiculo.getPlaca()),
+                        safe(veiculo.getModelo()),
+                        formatarHora(veiculo.getHoraEntrada())
+                ));
+                writer.newLine();
             }
         }
     }
 
     public void registrarHistoricoPagamento(String placa, String tipo, LocalDateTime horaEntrada, LocalDateTime horaSaida, long minutos, double valorPago) throws IOException {
-        // append ao histórico financeiro
         if (!Files.exists(HISTORICO_FINANCEIRO)) {
-            // criar com header
-            try (BufferedWriter w = Files.newBufferedWriter(HISTORICO_FINANCEIRO, StandardCharsets.UTF_8, StandardOpenOption.CREATE)) {
-                w.write("placa" + CSV_SEPARATOR + "tipo" + CSV_SEPARATOR + "horaEntrada" + CSV_SEPARATOR + "horaSaida" + CSV_SEPARATOR + "minutos" + CSV_SEPARATOR + "valorPago");
-                w.newLine();
+            try (BufferedWriter writer = Files.newBufferedWriter(
+                    HISTORICO_FINANCEIRO,
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE
+            )) {
+                writer.write(HEADER_HISTORICO);
+                writer.newLine();
             }
         }
 
-        try (BufferedWriter w = Files.newBufferedWriter(HISTORICO_FINANCEIRO, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-            String horaEnt = horaEntrada != null ? horaEntrada.toString() : "";
-            String horaSai = horaSaida != null ? horaSaida.toString() : "";
-            String linha = String.join(CSV_SEPARATOR, safe(placa), safe(tipo), horaEnt, horaSai, String.valueOf(minutos), String.valueOf(valorPago));
-            w.write(linha);
-            w.newLine();
+        try (BufferedWriter writer = Files.newBufferedWriter(
+                HISTORICO_FINANCEIRO,
+                StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.APPEND,
+                StandardOpenOption.WRITE
+        )) {
+            String linha = String.join(
+                    CSV_SEPARATOR,
+                    safe(placa),
+                    safe(tipo),
+                    formatarHora(horaEntrada),
+                    formatarHora(horaSaida),
+                    String.valueOf(minutos),
+                    String.valueOf(valorPago)
+            );
+            writer.write(linha);
+            writer.newLine();
         }
     }
 
-    private String tipoDeVeiculo(Veiculo v) {
-        if (v instanceof Carro) return "CARRO";
-        if (v instanceof Moto) return "MOTO";
-        if (v instanceof Caminhao) return "CAMINHAO";
+    public List<String[]> carregarHistoricoFinanceiro() throws IOException {
+        List<String[]> registros = new ArrayList<>();
+        if (!Files.exists(HISTORICO_FINANCEIRO)) {
+            return registros;
+        }
+
+        try (BufferedReader reader = Files.newBufferedReader(HISTORICO_FINANCEIRO, StandardCharsets.UTF_8)) {
+            String linha;
+            while ((linha = reader.readLine()) != null) {
+                String linhaLimpa = linha.trim();
+                if (linhaLimpa.isEmpty() || linhaLimpa.toLowerCase().startsWith("placa")) {
+                    continue;
+                }
+                registros.add(linhaLimpa.split(CSV_SEPARATOR, -1));
+            }
+        }
+
+        return registros;
+    }
+
+    private Veiculo criarVeiculo(String tipo, String placa, String modelo, LocalDateTime horaEntrada) {
+        return switch (tipo.toUpperCase()) {
+            case "CARRO" -> new Carro(placa, modelo, horaEntrada);
+            case "MOTO" -> new Moto(placa, modelo, horaEntrada);
+            case "CAMINHAO", "CAMINHÃO" -> new Caminhao(placa, modelo, horaEntrada);
+            default -> null;
+        };
+    }
+
+    private String tipoDeVeiculo(Veiculo veiculo) {
+        if (veiculo instanceof Carro) {
+            return "CARRO";
+        }
+        if (veiculo instanceof Moto) {
+            return "MOTO";
+        }
+        if (veiculo instanceof Caminhao) {
+            return "CAMINHAO";
+        }
         return "VEICULO";
     }
 
-    private String safe(String s) {
-        if (s == null) return "";
-        // remover separador para evitar corromper CSV
-        return s.replace(CSV_SEPARATOR, " ");
+    private String safe(String valor) {
+        if (valor == null) {
+            return "";
+        }
+        return valor.replace(CSV_SEPARATOR, " ");
+    }
+
+    private String formatarHora(LocalDateTime hora) {
+        return hora != null ? hora.toString() : "";
     }
 }

@@ -18,12 +18,11 @@ import java.util.Map;
 public class EstacionamentoService {
     private final int capacidade;
     private final EstacionamentoRepository repository;
-    private final Map<String, Veiculo> veiculos;
+    private final Map<String, Veiculo> veiculos = new LinkedHashMap<>();
 
     public EstacionamentoService(int capacidade, EstacionamentoRepository repository) throws IOException {
         this.capacidade = capacidade;
         this.repository = repository;
-        this.veiculos = new LinkedHashMap<>();
         carregarVeiculosAtivos();
     }
 
@@ -62,8 +61,16 @@ public class EstacionamentoService {
         return veiculos.values();
     }
 
+    public Veiculo buscarVeiculo(String placa) {
+        return veiculos.get(placa);
+    }
+
     public int getCapacidade() {
         return capacidade;
+    }
+
+    public void salvarEstado() throws IOException {
+        repository.salvarVeiculosAtivos(veiculos.values());
     }
 
     public int getVagasDisponiveis() {
@@ -86,9 +93,15 @@ public class EstacionamentoService {
     }
 
     private String tipoDeVeiculo(Veiculo veiculo) {
-        if (veiculo instanceof Carro) return "CARRO";
-        if (veiculo instanceof Moto) return "MOTO";
-        if (veiculo instanceof Caminhao) return "CAMINHAO";
+        if (veiculo instanceof Carro) {
+            return "CARRO";
+        }
+        if (veiculo instanceof Moto) {
+            return "MOTO";
+        }
+        if (veiculo instanceof Caminhao) {
+            return "CAMINHAO";
+        }
         return "VEICULO";
     }
 }
